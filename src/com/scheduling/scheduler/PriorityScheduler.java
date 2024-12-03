@@ -4,20 +4,20 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.PriorityQueue;
 
-public class SJFScheduler implements Scheduler {
-    // TODO: Solve starvation ya abou abdo
+public class PriorityScheduler implements  Scheduler {
+
     @Override
-    public List<ExecutionFrame> schedule(final List<Process> processes) {
+    public List<ExecutionFrame> schedule(List<Process> processes) {
         List<Process> processList = new ArrayList<>(processes);
         processList.sort((a, b) -> {
             int diff = a.arrivalTime() - b.arrivalTime();
             if (diff == 0)
-                return a.burstTime() - b.burstTime();
+                return a.priority() - b.priority();
             return diff;
         });
 
         List<ExecutionFrame> frames = new ArrayList<>();
-        PriorityQueue<Process> queue = new PriorityQueue<>((a, b) -> a.burstTime() - b.burstTime());
+        PriorityQueue<Process> queue = new PriorityQueue<>((a, b) -> a.priority() - b.priority());
 
         queue.add(processList.get(0));
 
