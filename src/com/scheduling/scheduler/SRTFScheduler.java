@@ -27,6 +27,8 @@ public class SRTFScheduler implements Scheduler {
             switch (event) {
                 case ProcessArrival arrival -> onProcessArrival(arrival);
                 case ProcessExit exit -> onProcessExit(exit);
+                case QuantumExit quantum -> {}
+                case QuantumThreshold threshold-> {}
             }
         }
 
@@ -35,7 +37,7 @@ public class SRTFScheduler implements Scheduler {
 
     void onProcessArrival(ProcessArrival event) {
         var process = event.process();
-        var task = new Task(process, process.burstTime());
+        var task = new Task(process, process.burstTime(), process.quantum());
 
         if (runningTask == null) {
             runningTask = task;
