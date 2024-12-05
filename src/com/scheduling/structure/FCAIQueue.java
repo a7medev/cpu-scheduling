@@ -13,7 +13,7 @@ public class FCAIQueue {
     final private PriorityQueue<Task> factorQueue;
 
     public FCAIQueue(FCAIScheduler scheduler) {
-        arrivalQueue = new LinkedList<Task>();
+        arrivalQueue = new LinkedList<>();
         factorQueue = new PriorityQueue<>(comparingInt(scheduler::factor));
     }
 
@@ -23,13 +23,13 @@ public class FCAIQueue {
     }
 
     public Task pollArrival() {
-       Task task =  arrivalQueue.poll();
+       var task = arrivalQueue.poll();
        factorQueue.remove(task);
        return task;
     }
 
     public Task pollFactor() {
-        Task task =  factorQueue.poll();
+        var task = factorQueue.poll();
         arrivalQueue.remove(task);
         return task;
     }
