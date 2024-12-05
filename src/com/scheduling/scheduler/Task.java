@@ -11,6 +11,10 @@ public record Task(Process process, int burstTime, int quantum) implements Compa
 
     @Override
     public int compareTo(Task other) {
-        return burstTime - other.burstTime;
+        var diff = burstTime - other.burstTime;
+        if (diff == 0) {
+            return process.arrivalTime() - other.process.arrivalTime();
+        }
+        return diff;
     }
 }

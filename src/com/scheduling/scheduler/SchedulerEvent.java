@@ -1,6 +1,6 @@
 package com.scheduling.scheduler;
 
-public abstract sealed class SchedulerEvent implements Comparable<SchedulerEvent> {
+public abstract sealed class SchedulerEvent implements Comparable<SchedulerEvent> permits ProcessArrival, ProcessExit, QuantumExit, QuantumThreshold {
     abstract Process process();
     abstract int time();
 
@@ -15,84 +15,5 @@ public abstract sealed class SchedulerEvent implements Comparable<SchedulerEvent
             return y - x;
         }
         return time() - other.time();
-    }
-}
-
-final class ProcessArrival extends SchedulerEvent {
-    final Process process;
-    final int time;
-
-    public ProcessArrival(Process process, int time) {
-        this.process = process;
-        this.time = time;
-    }
-
-    @Override
-    Process process() {
-        return process;
-    }
-
-    @Override
-    int time() {
-        return time;
-    }
-}
-
-final class ProcessExit extends SchedulerEvent {
-    final Process process;
-    final int time;
-
-    public ProcessExit(Process process, int time) {
-        this.process = process;
-        this.time = time;
-    }
-
-    @Override
-    Process process() {
-        return process;
-    }
-
-    @Override
-    int time() {
-        return time;
-    }
-}
-
-final class QuantumExit extends SchedulerEvent {
-    final Process process;
-    final int time;
-
-    public QuantumExit(Process process, int time) {
-        this.process = process;
-        this.time = time;
-    }
-
-    @Override
-    Process process() {
-        return process;
-    }
-
-    @Override
-    int time() {
-        return time;
-    }
-}
-final class QuantumThreshold extends SchedulerEvent {
-    final Process process;
-    final int time;
-
-    public QuantumThreshold(Process process, int time) {
-        this.process = process;
-        this.time = time;
-    }
-
-    @Override
-    Process process() {
-        return process;
-    }
-
-    @Override
-    int time() {
-        return time;
     }
 }

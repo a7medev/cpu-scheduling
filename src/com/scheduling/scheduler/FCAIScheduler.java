@@ -5,45 +5,27 @@ import java.util.*;
 import static java.lang.Math.ceil;
 import static java.lang.Math.max;
 
-public class FCAIScheduler implements Scheduler {
-    int startTime = 0;
-    Task runningTask;
-    ProcessExit exitEvent;
+public class FCAIScheduler extends Scheduler {
     QuantumExit quantumEvent;
     QuantumThreshold quantumThresholdEvent;
     double lastArrivalTime = 0;
     double maxBurstTime = 0;
     final double QUANTUM_THRESHOLD = 0.4;
 
-    PriorityQueue<SchedulerEvent> events = new PriorityQueue<>();
-    List<ExecutionFrame> frames = new ArrayList<>();
-
     FCAIQueue taskQueue = new FCAIQueue(this);
 
     @Override
     public List<ExecutionFrame> schedule(List<Process> processes) {
         for (var process : processes) {
-            var event = new ProcessArrival(process, process.arrivalTime());
-            events.add(event);
             lastArrivalTime = max(lastArrivalTime, process.arrivalTime());
             maxBurstTime = max(maxBurstTime, process.burstTime());
         }
 
-        while (!events.isEmpty()) {
-            var event = events.poll();
-
-            switch (event) {
-                case ProcessArrival arrival -> onProcessArrival(arrival);
-                case ProcessExit exit -> onProcessExit(exit);
-                case QuantumExit quantum -> onQuantumExit(quantum);
-                case QuantumThreshold threshold -> onQuantumThreshold(threshold);
-            }
-        }
-
-        return frames;
+        return super.schedule(processes);
     }
 
-    void onProcessArrival(ProcessArrival event) {
+    @Override
+    protected void onProcessArrival(ProcessArrival event) {
         var process = event.process();
         var task = new Task(process, process.burstTime(), process.quantum());
 
@@ -65,12 +47,14 @@ public class FCAIScheduler implements Scheduler {
         }
     }
 
-    void onProcessExit(ProcessExit event) {
+    @Override
+    protected void onProcessExit(ProcessExit event) {
         var task = taskQueue.pollArrival();
         switchProcess(task, event.time(), 0);
     }
 
-    void onQuantumExit(QuantumExit event) {
+    @Override
+    protected void onQuantumExit(QuantumExit event) {
         if (taskQueue.isEmpty()) {
             return;
         }
@@ -79,7 +63,8 @@ public class FCAIScheduler implements Scheduler {
         switchProcess(task, event.time(), runningTask.quantum() + 2);
     }
 
-    void onQuantumThreshold(QuantumThreshold event) {
+    @Override
+    protected void onQuantumThreshold(QuantumThreshold event) {
         if (taskQueue.isEmpty()) {
             return;
         }
@@ -98,43 +83,30 @@ public class FCAIScheduler implements Scheduler {
         switchProcess(task, event.time(), runningTask.quantum() + remainingQuantum);
     }
 
-    void switchProcess(Task task, int time, int quantum) {
-        if (runningTask != null) {
-            frames.add(new ExecutionFrame(runningTask.process(), startTime, time));
+    @Override
+    protected void addTask(Task task) {
+        taskQueue.add(task);
+    }
 
-            events.remove(exitEvent);
-            events.remove(quantumEvent);
-            events.remove(quantumThresholdEvent);
-
-            var remainingTime = runningTask.burstTime() - (time - startTime);
-
-            if (remainingTime > 0) {
-                var remainingTask = runningTask.copy(remainingTime, quantum);
-                taskQueue.add(remainingTask);
-            }
-        }
-
-        if (task == null) {
-            runningTask = null;
-            exitEvent = null;
-            quantumEvent = null;
-            quantumThresholdEvent = null;
-            return;
-        }
-
-        runningTask = task;
-        startTime = time;
+    @Override
+    protected void addRunningTaskEvents(Task task, int time) {
+        super.addRunningTaskEvents(task, time);
 
         var process = task.process();
         var quantumThreshold = (int) ceil(task.quantum() * QUANTUM_THRESHOLD);
 
-        exitEvent = new ProcessExit(process, startTime + task.burstTime());
         quantumEvent = new QuantumExit(process, startTime + task.quantum());
         quantumThresholdEvent = new QuantumThreshold(process, time + quantumThreshold);
 
-        events.add(exitEvent);
         events.add(quantumEvent);
         events.add(quantumThresholdEvent);
+    }
+
+    @Override
+    protected void removeRunningTaskEvents() {
+        super.removeRunningTaskEvents();
+        events.remove(quantumEvent);
+        events.remove(quantumThresholdEvent);
     }
 
     int factor(Task task) {
