@@ -1,5 +1,7 @@
 package com.scheduling.scheduler;
 
+import org.jetbrains.annotations.Nullable;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.PriorityQueue;
@@ -27,8 +29,7 @@ public class SRTFScheduler implements Scheduler {
             switch (event) {
                 case ProcessArrival arrival -> onProcessArrival(arrival);
                 case ProcessExit exit -> onProcessExit(exit);
-                case QuantumExit quantum -> {}
-                case QuantumThreshold threshold-> {}
+                default -> throw new IllegalStateException("Unexpected event: " + event);
             }
         }
 
@@ -40,10 +41,7 @@ public class SRTFScheduler implements Scheduler {
         var task = new Task(process, process.burstTime(), process.quantum());
 
         if (runningTask == null) {
-            runningTask = task;
-            startTime = event.time();
-            exitEvent = new ProcessExit(process, startTime + task.burstTime());
-            events.add(exitEvent);
+            switchProcess(task, event.time());
             return;
         }
 
@@ -54,33 +52,35 @@ public class SRTFScheduler implements Scheduler {
             taskQueue.add(task);
         } else {
             // Preemption
-            frames.add(new ExecutionFrame(runningTask.process(), startTime, event.time()));
-
-            // Remove the exit event for the running process since it will be rescheduled again with a new
-            // exit event.
-            events.remove(exitEvent);
-            var remainingTask = runningTask.copy(remainingTime);
-
-            taskQueue.add(remainingTask);
-            runningTask = task;
-            startTime = event.time();
-            exitEvent = new ProcessExit(process, startTime + task.burstTime());
-            events.add(exitEvent);
+            switchProcess(task, event.time());
         }
     }
 
     void onProcessExit(ProcessExit event) {
-        frames.add(new ExecutionFrame(event.process(), startTime, event.time()));
+        var task = taskQueue.poll();
+        switchProcess(task, event.time());
+    }
 
-        runningTask = taskQueue.poll();
+    void switchProcess(@Nullable Task task, int time) {
+        if (runningTask != null) {
+            frames.add(new ExecutionFrame(runningTask.process(), startTime, time));
 
-        if (runningTask == null) {
+            events.remove(exitEvent);
+            var remainingTime = runningTask.burstTime() - (time - startTime);
+
+            if (remainingTime > 0) {
+                var remainingTask = runningTask.copy(remainingTime);
+                taskQueue.add(remainingTask);
+            }
+        }
+
+        if (task == null) {
             return;
         }
 
-        exitEvent = new ProcessExit(runningTask.process(), event.time() + runningTask.burstTime());
-        startTime = event.time();
-
+        runningTask = task;
+        startTime = time;
+        exitEvent = new ProcessExit(task.process(), startTime + task.burstTime());
         events.add(exitEvent);
     }
 }
