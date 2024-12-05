@@ -75,6 +75,8 @@ public class SRTFScheduler implements Scheduler {
         }
 
         if (task == null) {
+            runningTask = null;
+            exitEvent = null;
             return;
         }
 

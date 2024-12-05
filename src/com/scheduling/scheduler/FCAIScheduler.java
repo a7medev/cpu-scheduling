@@ -115,6 +115,10 @@ public class FCAIScheduler implements Scheduler {
         }
 
         if (task == null) {
+            runningTask = null;
+            exitEvent = null;
+            quantumEvent = null;
+            quantumThresholdEvent = null;
             return;
         }
 
