@@ -13,7 +13,7 @@ public class FCAIScheduler implements Scheduler {
     QuantumThreshold quantumThresholdEvent;
     double lastArrivalTime = 0;
     double maxBurstTime = 0;
-    final double PERCENTAGE = 0.4;
+    final double QUANTUM_THRESHOLD = 0.4;
 
     PriorityQueue<SchedulerEvent> events = new PriorityQueue<>();
     List<ExecutionFrame> frames = new ArrayList<>();
@@ -47,97 +47,36 @@ public class FCAIScheduler implements Scheduler {
         var process = event.process();
         var task = new Task(process, process.burstTime(), process.quantum());
 
-        int taskFactor = factor(task);
         if (runningTask == null) {
-            runningTask = task;
-            startTime = event.time();
-            exitEvent = new ProcessExit(process, startTime + task.burstTime());
-            quantumEvent = new QuantumExit(process, startTime + task.quantum());
-
-            int quantumThreshold = (int)ceil(task.quantum() * PERCENTAGE);
-            quantumThresholdEvent = new QuantumThreshold(process, startTime + quantumThreshold);
-            events.add(exitEvent);
-            events.add(quantumEvent);
-            events.add(quantumThresholdEvent);
+            switchProcess(task, event.time(), 0);
             return;
         }
 
-        int remainingQuantum = runningTask.quantum() - (event.time() - startTime);
-        var remainingTime = runningTask.burstTime() - (event.time() - startTime);
-        boolean isPastThreshold = (runningTask.quantum() - remainingQuantum) >= (PERCENTAGE * runningTask.quantum());
-        int runningTaskFactor = factor(runningTask);
-        if (taskFactor > runningTaskFactor || !isPastThreshold) {
+        var runningTime = event.time() - startTime;
+        var remainingQuantum = runningTask.quantum() - runningTime;
+        var isPastThreshold = runningTime >= QUANTUM_THRESHOLD * runningTask.quantum();
+
+        if (!isPastThreshold || factor(task) > factor(runningTask)) {
             // No preemption
             taskQueue.add(task);
         } else {
             // Preemption
-            frames.add(new ExecutionFrame(runningTask.process(), startTime, event.time()));
-
-            // Remove the exit event for the running process since it will be rescheduled again with a new
-            // exit event.
-            events.remove(exitEvent);
-            events.remove(quantumEvent);
-            events.remove(quantumThresholdEvent);
-            var remainingTask = runningTask.copy(remainingTime, remainingQuantum + runningTask.quantum());
-
-            taskQueue.add(remainingTask);
-            runningTask = task;
-            startTime = event.time();
-            exitEvent = new ProcessExit(process, startTime + task.burstTime());
-            quantumEvent = new QuantumExit(process, startTime + task.quantum());
-            events.add(exitEvent);
-            events.add(quantumEvent);
-            events.add(quantumThresholdEvent);
+            switchProcess(task, event.time(), remainingQuantum + runningTask.quantum());
         }
     }
 
     void onProcessExit(ProcessExit event) {
-        frames.add(new ExecutionFrame(event.process(), startTime, event.time()));
-        events.remove(quantumEvent);
-        events.remove(quantumThresholdEvent);
-
-        runningTask = taskQueue.pollArrival();
-
-        if (runningTask == null) {
-            return;
-        }
-
-        int quantumThreshold = (int)ceil(runningTask.quantum() * PERCENTAGE);
-        exitEvent = new ProcessExit(runningTask.process(), event.time() + runningTask.burstTime());
-        quantumEvent = new QuantumExit(runningTask.process(), event.time() + runningTask.quantum());
-        quantumThresholdEvent = new QuantumThreshold(runningTask.process(), event.time() + quantumThreshold);
-        startTime = event.time();
-
-        events.add(exitEvent);
-        events.add(quantumEvent);
-        events.add(quantumThresholdEvent);
+        var task = taskQueue.pollArrival();
+        switchProcess(task, event.time(), 0);
     }
 
     void onQuantumExit(QuantumExit event) {
         if (taskQueue.isEmpty()) {
             return;
         }
-        frames.add(new ExecutionFrame(runningTask.process(), startTime, event.time()));
-        // Remove the exit event for the running process since it will be rescheduled again with a new
-        // exit event.
-        var remainingTime = runningTask.burstTime() - (event.time() - startTime);
-        events.remove(exitEvent);
-        events.remove(quantumThresholdEvent);
-        var remainingTask = runningTask.copy(remainingTime, runningTask.quantum() + 2);
 
         Task task = taskQueue.pollArrival();
-
-        taskQueue.add(remainingTask);
-
-        int quantumThreshold = (int)ceil(runningTask.quantum() * PERCENTAGE);
-        runningTask = task;
-        startTime = event.time();
-        exitEvent = new ProcessExit(task.process(), startTime + task.burstTime());
-        quantumEvent = new QuantumExit(task.process(), startTime + task.quantum());
-        quantumThresholdEvent = new QuantumThreshold(runningTask.process(), event.time() + quantumThreshold);
-        events.add(exitEvent);
-        events.add(quantumEvent);
-        events.add(quantumThresholdEvent);
+        switchProcess(task, event.time(), runningTask.quantum() + 2);
     }
 
     void onQuantumThreshold(QuantumThreshold event) {
@@ -152,23 +91,43 @@ public class FCAIScheduler implements Scheduler {
         }
 
         taskQueue.pollFactor();
-        int remainingQuantum = runningTask.quantum() - (event.time() - startTime);
-        var remainingTime = runningTask.burstTime() - (event.time() - startTime);
 
-        frames.add(new ExecutionFrame(runningTask.process(), startTime, event.time()));
-        // Remove the exit event for the running process since it will be rescheduled again with a new
-        // exit event.
-        events.remove(exitEvent);
-        events.remove(quantumEvent);
-        var remainingTask = runningTask.copy(remainingTime, remainingQuantum + runningTask.quantum());
-        int quantumThreshold = (int)ceil(runningTask.quantum() * PERCENTAGE);
+        var runningTime = event.time() - startTime;
+        int remainingQuantum = runningTask.quantum() - runningTime;
 
-        taskQueue.add(remainingTask);
+        switchProcess(task, event.time(), runningTask.quantum() + remainingQuantum);
+    }
+
+    void switchProcess(Task task, int time, int quantum) {
+        if (runningTask != null) {
+            frames.add(new ExecutionFrame(runningTask.process(), startTime, time));
+
+            events.remove(exitEvent);
+            events.remove(quantumEvent);
+            events.remove(quantumThresholdEvent);
+
+            var remainingTime = runningTask.burstTime() - (time - startTime);
+
+            if (remainingTime > 0) {
+                var remainingTask = runningTask.copy(remainingTime, quantum);
+                taskQueue.add(remainingTask);
+            }
+        }
+
+        if (task == null) {
+            return;
+        }
+
         runningTask = task;
-        startTime = event.time();
-        exitEvent = new ProcessExit(task.process(), startTime + task.burstTime());
-        quantumEvent = new QuantumExit(task.process(), startTime + task.quantum());
-        quantumThresholdEvent = new QuantumThreshold(runningTask.process(), event.time() + quantumThreshold);
+        startTime = time;
+
+        var process = task.process();
+        var quantumThreshold = (int) ceil(task.quantum() * QUANTUM_THRESHOLD);
+
+        exitEvent = new ProcessExit(process, startTime + task.burstTime());
+        quantumEvent = new QuantumExit(process, startTime + task.quantum());
+        quantumThresholdEvent = new QuantumThreshold(process, time + quantumThreshold);
+
         events.add(exitEvent);
         events.add(quantumEvent);
         events.add(quantumThresholdEvent);
