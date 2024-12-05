@@ -9,10 +9,15 @@ import java.util.stream.Collectors;
 public class Main {
     public static void main(String[] args) {
         List<Process> processes = List.of(
-                new Process("P1", 0, 17, 4, 4, null),
-                new Process("P2", 3, 6, 9, 3, null),
-                new Process("P3", 4, 10, 3, 5, null),
-                new Process("P4", 29, 4, 8, 2, null)
+            new Process("P1", 4, 3, 0, 4, null),
+            new Process("P2", 5, 6, 0, 4, null),
+            new Process("P3", 6, 7, 0, 4, null),
+            new Process("P4", 8, 10, 0, 4, null),
+            new Process("P5", 12, 5, 0, 4, null),
+            new Process("P6", 24, 2, 0, 4, null),
+            new Process("P6", 100, 1, 0, 4, null),
+            new Process("P6", 101, 2, 0, 4, null),
+            new Process("P6", 102, 12, 0, 4, null)
         );
 
         Scheduler scheduler = new FCAIScheduler();
