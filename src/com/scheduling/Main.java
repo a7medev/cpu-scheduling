@@ -1,7 +1,7 @@
 package com.scheduling;
 
 import com.scheduling.scheduler.*;
-import com.scheduling.scheduler.Process;
+import com.scheduling.structure.Process;
 
 import java.util.List;
 import java.util.stream.Collectors;

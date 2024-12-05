@@ -1,5 +1,9 @@
 package com.scheduling.scheduler;
 
+import com.scheduling.event.ProcessArrival;
+import com.scheduling.event.ProcessExit;
+import com.scheduling.structure.Task;
+
 import java.util.PriorityQueue;
 
 public class SRTFScheduler extends Scheduler {

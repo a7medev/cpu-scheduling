@@ -1,6 +1,7 @@
-package com.scheduling.scheduler;
+package com.scheduling.structure;
 
-import java.util.Comparator;
+import com.scheduling.scheduler.FCAIScheduler;
+
 import java.util.LinkedList;
 import java.util.PriorityQueue;
 import java.util.Queue;
@@ -11,33 +12,33 @@ public class FCAIQueue {
     final private Queue<Task> arrivalQueue;
     final private PriorityQueue<Task> factorQueue;
 
-    FCAIQueue(FCAIScheduler scheduler) {
+    public FCAIQueue(FCAIScheduler scheduler) {
         arrivalQueue = new LinkedList<Task>();
         factorQueue = new PriorityQueue<>(comparingInt(scheduler::factor));
     }
 
-    void add(Task task) {
+    public void add(Task task) {
         arrivalQueue.add(task);
         factorQueue.add(task);
     }
 
-    Task pollArrival() {
+    public Task pollArrival() {
        Task task =  arrivalQueue.poll();
        factorQueue.remove(task);
        return task;
     }
 
-    Task pollFactor() {
+    public Task pollFactor() {
         Task task =  factorQueue.poll();
         arrivalQueue.remove(task);
         return task;
     }
 
-    Task peekFactor() {
+    public Task peekFactor() {
       return factorQueue.peek();
     }
 
-    boolean isEmpty() {
+    public boolean isEmpty() {
         return arrivalQueue.isEmpty();
     }
 

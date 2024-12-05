@@ -1,4 +1,4 @@
-package com.scheduling.scheduler;
+package com.scheduling.structure;
 
 public record Process(String name,
                       int arrivalTime,

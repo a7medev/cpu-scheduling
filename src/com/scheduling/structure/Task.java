@@ -1,11 +1,11 @@
-package com.scheduling.scheduler;
+package com.scheduling.structure;
 
 public record Task(Process process, int burstTime, int quantum) implements Comparable<Task> {
-    Task copy(int burstTime) {
+    public Task copy(int burstTime) {
         return new Task(process, burstTime, quantum);
     }
 
-    Task copy(int burstTime, int quantum) {
+    public Task copy(int burstTime, int quantum) {
         return new Task(process, burstTime, quantum);
     }
 

@@ -1,5 +1,14 @@
 package com.scheduling.scheduler;
 
+import com.scheduling.event.ProcessArrival;
+import com.scheduling.event.ProcessExit;
+import com.scheduling.event.QuantumExit;
+import com.scheduling.event.QuantumThreshold;
+import com.scheduling.structure.ExecutionFrame;
+import com.scheduling.structure.FCAIQueue;
+import com.scheduling.structure.Process;
+import com.scheduling.structure.Task;
+
 import java.util.*;
 
 import static java.lang.Math.ceil;
@@ -15,7 +24,7 @@ public class FCAIScheduler extends Scheduler {
     FCAIQueue taskQueue = new FCAIQueue(this);
 
     @Override
-    public List<ExecutionFrame> schedule(List<Process> processes) {
+    public List<ExecutionFrame> schedule(List<com.scheduling.structure.Process> processes) {
         for (var process : processes) {
             lastArrivalTime = max(lastArrivalTime, process.arrivalTime());
             maxBurstTime = max(maxBurstTime, process.burstTime());
@@ -109,7 +118,7 @@ public class FCAIScheduler extends Scheduler {
         events.remove(quantumThresholdEvent);
     }
 
-    int factor(Task task) {
+    public int factor(Task task) {
         Process process = task.process();
         int normalizedArrivalTime = (int) ceil(process.arrivalTime() / lastArrivalTime);
         int normalizedBurstTime = (int) ceil(task.burstTime() / maxBurstTime);

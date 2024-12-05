@@ -1,4 +1,6 @@
-package com.scheduling.scheduler;
+package com.scheduling.event;
+
+import com.scheduling.structure.Process;
 
 final public class ProcessArrival extends SchedulerEvent {
     final Process process;
@@ -10,12 +12,12 @@ final public class ProcessArrival extends SchedulerEvent {
     }
 
     @Override
-    Process process() {
+    public Process process() {
         return process;
     }
 
     @Override
-    int time() {
+    public int time() {
         return time;
     }
 }

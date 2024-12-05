@@ -1,5 +1,10 @@
 package com.scheduling.scheduler;
 
+import com.scheduling.event.*;
+import com.scheduling.structure.ExecutionFrame;
+import com.scheduling.structure.Process;
+import com.scheduling.structure.Task;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.PriorityQueue;
@@ -44,7 +49,7 @@ public abstract class Scheduler {
         exitEvent = new ProcessExit(task.process(), time + task.burstTime());
         events.add(exitEvent);
     }
-    
+
     protected void removeRunningTaskEvents() {
         events.remove(exitEvent);
     }

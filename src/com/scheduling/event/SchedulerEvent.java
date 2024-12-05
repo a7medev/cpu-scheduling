@@ -1,8 +1,10 @@
-package com.scheduling.scheduler;
+package com.scheduling.event;
+
+import com.scheduling.structure.Process;
 
 public abstract sealed class SchedulerEvent implements Comparable<SchedulerEvent> permits ProcessArrival, ProcessExit, QuantumExit, QuantumThreshold {
-    abstract Process process();
-    abstract int time();
+    abstract public Process process();
+    abstract public int time();
 
     @Override
     public int compareTo(SchedulerEvent other) {
