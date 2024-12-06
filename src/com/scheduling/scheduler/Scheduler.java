@@ -39,9 +39,14 @@ public abstract class Scheduler {
     }
 
     abstract protected void onProcessArrival(ProcessArrival event);
+
     abstract protected void onProcessExit(ProcessExit event);
-    protected void onQuantumExit(QuantumExit event) { }
-    protected void onQuantumThreshold(QuantumThreshold event) { }
+
+    protected void onQuantumExit(QuantumExit event) {
+    }
+
+    protected void onQuantumThreshold(QuantumThreshold event) {
+    }
 
     abstract protected void addTask(Task task);
 
@@ -63,7 +68,7 @@ public abstract class Scheduler {
             var remainingTime = runningTask.burstTime() - (time - startTime);
 
             if (remainingTime > 0) {
-                var remainingTask = runningTask.copy(remainingTime, quantum);
+                var remainingTask = runningTask.copy(remainingTime, quantum, time);
                 addTask(remainingTask);
             }
         }
