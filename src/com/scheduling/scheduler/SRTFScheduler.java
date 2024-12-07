@@ -4,13 +4,12 @@ import com.scheduling.structure.SchedulerEvent.ProcessArrival;
 import com.scheduling.structure.SchedulerEvent.ProcessExit;
 import com.scheduling.structure.ExecutionFrame;
 import com.scheduling.structure.Process;
-import com.scheduling.structure.Task;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class SRTFScheduler extends Scheduler {
-    List<Task> taskQueue = new ArrayList<>();
+    List<Process> processQueue = new ArrayList<>();
     private double agingFactor;
 
     @Override
@@ -29,45 +28,44 @@ public class SRTFScheduler extends Scheduler {
     @Override
     protected void onProcessArrival(ProcessArrival event) {
         var process = event.process();
-        var task = new Task(process, process.burstTime(), process.quantum());
 
-        if (runningTask == null) {
-            switchProcess(task, event.time());
+        if (runningProcess == null) {
+            switchProcess(process, event.time());
             return;
         }
 
-        var remainingTime = runningTask.burstTime() - (event.time() - startTime);
+        var remainingTime = runningProcess.burstTime() - (event.time() - startTime);
 
-        if (remainingTime <= task.burstTime()) {
+        if (remainingTime <= process.burstTime()) {
             // No preemption
-            taskQueue.add(task);
+            processQueue.add(process);
         } else {
             // Preemption
-            switchProcess(task, event.time());
+            switchProcess(process, event.time());
         }
     }
 
     @Override
     protected void onProcessExit(ProcessExit event) {
-        Task nextTask = null;
+        Process nextProcess = null;
         double burstTime = Integer.MAX_VALUE;
 
-        for (var task : taskQueue) {
-            var waitingTime = event.time() - task.arrivalTime();
-            var effectiveBurstTime = task.process().burstTime() - agingFactor * waitingTime;
+        for (var process : processQueue) {
+            var waitingTime = event.time() - process.arrivalTime();
+            var effectiveBurstTime = process.burstTime() - agingFactor * waitingTime;
 
             if (effectiveBurstTime < burstTime) {
-                nextTask = task;
+                nextProcess = process;
                 burstTime = effectiveBurstTime;
             }
         }
 
-        taskQueue.remove(nextTask);
-        switchProcess(nextTask, event.time());
+        processQueue.remove(nextProcess);
+        switchProcess(nextProcess, event.time());
     }
 
     @Override
-    protected void addTask(Task task) {
-        taskQueue.add(task);
+    protected void addProcess(Process process) {
+        processQueue.add(process);
     }
 }

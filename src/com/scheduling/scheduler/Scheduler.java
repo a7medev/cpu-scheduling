@@ -4,7 +4,6 @@ import com.scheduling.structure.SchedulerEvent;
 import com.scheduling.structure.SchedulerEvent.*;
 import com.scheduling.structure.ExecutionFrame;
 import com.scheduling.structure.Process;
-import com.scheduling.structure.Task;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,7 +11,7 @@ import java.util.PriorityQueue;
 
 public abstract class Scheduler {
     protected int startTime = 0;
-    protected Task runningTask;
+    protected Process runningProcess;
 
     protected final PriorityQueue<SchedulerEvent> events = new PriorityQueue<>();
     protected List<ExecutionFrame> frames = new ArrayList<>();
@@ -49,43 +48,43 @@ public abstract class Scheduler {
     protected void onQuantumThreshold(QuantumThreshold event) {
     }
 
-    abstract protected void addTask(Task task);
+    abstract protected void addProcess(Process process);
 
-    protected void addRunningTaskEvents(Task task, int time) {
-        exitEvent = new ProcessExit(task.process(), time + task.burstTime());
+    protected void addRunningProcessEvents(Process process, int time) {
+        exitEvent = new ProcessExit(process, time + process.burstTime());
         events.add(exitEvent);
     }
 
-    protected void removeRunningTaskEvents() {
+    protected void removeRunningProcessEvents() {
         events.remove(exitEvent);
     }
 
-    protected void switchProcess(Task task, int time, int quantum) {
-        if (runningTask != null) {
-            frames.add(new ExecutionFrame(runningTask.process(), startTime, time));
+    protected void switchProcess(Process process, int time, int quantum) {
+        if (runningProcess != null) {
+            frames.add(new ExecutionFrame(runningProcess, startTime, time));
 
-            removeRunningTaskEvents();
+            removeRunningProcessEvents();
 
-            var remainingTime = runningTask.burstTime() - (time - startTime);
+            var remainingTime = runningProcess.burstTime() - (time - startTime);
 
             if (remainingTime > 0) {
-                var remainingTask = runningTask.copy(remainingTime, quantum, time);
-                addTask(remainingTask);
+                var remainingProcess = runningProcess.copy(remainingTime, quantum, time);
+                addProcess(remainingProcess);
             }
         }
 
-        if (task == null) {
-            runningTask = null;
+        if (process == null) {
+            runningProcess = null;
             return;
         }
 
-        runningTask = task;
+        runningProcess = process;
         startTime = time;
 
-        addRunningTaskEvents(task, time);
+        addRunningProcessEvents(process, time);
     }
 
-    protected void switchProcess(Task task, int time) {
-        switchProcess(task, time, 0);
+    protected void switchProcess(Process process, int time) {
+        switchProcess(process, time, 0);
     }
 }

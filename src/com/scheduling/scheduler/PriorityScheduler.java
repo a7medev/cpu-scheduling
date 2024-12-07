@@ -1,36 +1,35 @@
 package com.scheduling.scheduler;
 
+import com.scheduling.structure.Process;
 import com.scheduling.structure.SchedulerEvent.ProcessArrival;
 import com.scheduling.structure.SchedulerEvent.ProcessExit;
-import com.scheduling.structure.Task;
 
 import java.util.Comparator;
 import java.util.PriorityQueue;
 
 public class PriorityScheduler extends Scheduler {
-    PriorityQueue<Task> taskQueue = new PriorityQueue<>(Comparator.comparing(a -> a.process().priority()));
+    PriorityQueue<Process> processQueue = new PriorityQueue<>(Comparator.comparing(Process::priority));
 
     @Override
     protected void onProcessArrival(ProcessArrival event) {
         var process = event.process();
-        var task = new Task(process, process.burstTime(), process.quantum());
 
-        if (runningTask == null) {
-            switchProcess(task, event.time());
+        if (runningProcess == null) {
+            switchProcess(process, event.time());
             return;
         }
 
-        taskQueue.add(task);
+        processQueue.add(process);
     }
 
     @Override
     protected void onProcessExit(ProcessExit event) {
-        var task = taskQueue.poll();
-        switchProcess(task, event.time());
+        var process = processQueue.poll();
+        switchProcess(process, event.time());
     }
 
     @Override
-    protected void addTask(Task task) {
-        taskQueue.add(task);
+    protected void addProcess(Process process) {
+        processQueue.add(process);
     }
 }
