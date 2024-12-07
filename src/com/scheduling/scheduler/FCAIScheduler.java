@@ -1,9 +1,9 @@
 package com.scheduling.scheduler;
 
-import com.scheduling.event.ProcessArrival;
-import com.scheduling.event.ProcessExit;
-import com.scheduling.event.QuantumExit;
-import com.scheduling.event.QuantumThreshold;
+import com.scheduling.structure.SchedulerEvent.ProcessArrival;
+import com.scheduling.structure.SchedulerEvent.ProcessExit;
+import com.scheduling.structure.SchedulerEvent.QuantumExit;
+import com.scheduling.structure.SchedulerEvent.QuantumThreshold;
 import com.scheduling.structure.ExecutionFrame;
 import com.scheduling.structure.FCAIQueue;
 import com.scheduling.structure.Process;

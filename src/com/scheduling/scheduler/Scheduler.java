@@ -1,6 +1,7 @@
 package com.scheduling.scheduler;
 
-import com.scheduling.event.*;
+import com.scheduling.structure.SchedulerEvent;
+import com.scheduling.structure.SchedulerEvent.*;
 import com.scheduling.structure.ExecutionFrame;
 import com.scheduling.structure.Process;
 import com.scheduling.structure.Task;

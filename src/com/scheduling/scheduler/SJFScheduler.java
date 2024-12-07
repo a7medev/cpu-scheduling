@@ -1,7 +1,7 @@
 package com.scheduling.scheduler;
 
-import com.scheduling.event.ProcessArrival;
-import com.scheduling.event.ProcessExit;
+import com.scheduling.structure.SchedulerEvent.ProcessArrival;
+import com.scheduling.structure.SchedulerEvent.ProcessExit;
 import com.scheduling.structure.ExecutionFrame;
 import com.scheduling.structure.Process;
 import com.scheduling.structure.Task;
