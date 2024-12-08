@@ -1,5 +1,6 @@
 package com.scheduling.scheduler;
 
+import com.scheduling.output.Statistics;
 import com.scheduling.structure.SchedulerEvent;
 import com.scheduling.structure.SchedulerEvent.*;
 import com.scheduling.structure.ExecutionFrame;
@@ -15,10 +16,13 @@ public abstract class Scheduler {
 
     protected final PriorityQueue<SchedulerEvent> events = new PriorityQueue<>();
     protected List<ExecutionFrame> frames = new ArrayList<>();
+    Statistics statistics = new Statistics();
 
     ProcessExit exitEvent;
 
-    public List<ExecutionFrame> schedule(List<Process> processes) {
+    public List<ExecutionFrame> schedule(List<Process> processes, Statistics statistics) {
+        this.statistics = statistics;
+
         for (var process : processes) {
             var event = new ProcessArrival(process, process.arrivalTime());
             events.add(event);
@@ -40,7 +44,12 @@ public abstract class Scheduler {
 
     abstract protected void onProcessArrival(ProcessArrival event);
 
-    abstract protected void onProcessExit(ProcessExit event);
+    protected void onProcessExit(ProcessExit event) {
+        var process = event.process();
+        var turnaroundTime = event.time() - process.firstArrivalTime();
+
+        statistics.addTurnaroundTime(process.name(), turnaroundTime);
+    }
 
     protected void onQuantumExit(QuantumExit event) {
     }
@@ -80,6 +89,10 @@ public abstract class Scheduler {
 
         runningProcess = process;
         startTime = time;
+
+        var waitingTime = time - process.arrivalTime();
+
+        statistics.addWaitingTime(process.name(), waitingTime);
 
         addRunningProcessEvents(process, time);
     }

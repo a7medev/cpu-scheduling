@@ -1,5 +1,6 @@
 package com.scheduling.scheduler;
 
+import com.scheduling.output.Statistics;
 import com.scheduling.structure.SchedulerEvent.ProcessArrival;
 import com.scheduling.structure.SchedulerEvent.ProcessExit;
 import com.scheduling.structure.ExecutionFrame;
@@ -13,7 +14,7 @@ public class SRTFScheduler extends Scheduler {
     private double agingFactor;
 
     @Override
-    public List<ExecutionFrame> schedule(List<Process> processes) {
+    public List<ExecutionFrame> schedule(List<Process> processes, Statistics statistics) {
         var averageBurstTime = 0;
         for (Process process : processes) {
             averageBurstTime += process.burstTime();
@@ -22,7 +23,7 @@ public class SRTFScheduler extends Scheduler {
 
         agingFactor = 1.0 / averageBurstTime;
 
-        return super.schedule(processes);
+        return super.schedule(processes, statistics);
     }
 
     @Override
@@ -47,6 +48,8 @@ public class SRTFScheduler extends Scheduler {
 
     @Override
     protected void onProcessExit(ProcessExit event) {
+        super.onProcessExit(event);
+
         Process nextProcess = null;
         double burstTime = Integer.MAX_VALUE;
 

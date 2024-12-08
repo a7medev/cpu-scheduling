@@ -1,5 +1,6 @@
 package com.scheduling.scheduler;
 
+import com.scheduling.output.Statistics;
 import com.scheduling.structure.SchedulerEvent.ProcessArrival;
 import com.scheduling.structure.SchedulerEvent.ProcessExit;
 import com.scheduling.structure.SchedulerEvent.QuantumExit;
@@ -23,13 +24,13 @@ public class FCAIScheduler extends Scheduler {
     FCAIQueue processQueue = new FCAIQueue(this);
 
     @Override
-    public List<ExecutionFrame> schedule(List<com.scheduling.structure.Process> processes) {
+    public List<ExecutionFrame> schedule(List<com.scheduling.structure.Process> processes, Statistics statistics) {
         for (var process : processes) {
             lastArrivalTime = max(lastArrivalTime, process.arrivalTime());
             maxBurstTime = max(maxBurstTime, process.burstTime());
         }
 
-        return super.schedule(processes);
+        return super.schedule(processes, statistics);
     }
 
     @Override
@@ -56,6 +57,8 @@ public class FCAIScheduler extends Scheduler {
 
     @Override
     protected void onProcessExit(ProcessExit event) {
+        super.onProcessExit(event);
+
         var process = processQueue.pollArrival();
         switchProcess(process, event.time(), 0);
     }

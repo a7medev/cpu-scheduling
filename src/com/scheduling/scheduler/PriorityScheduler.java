@@ -24,6 +24,8 @@ public class PriorityScheduler extends Scheduler {
 
     @Override
     protected void onProcessExit(ProcessExit event) {
+        super.onProcessExit(event);
+
         var process = processQueue.poll();
         switchProcess(process, event.time());
     }
