@@ -5,6 +5,7 @@ import com.scheduling.structure.SchedulerEvent;
 import com.scheduling.structure.SchedulerEvent.*;
 import com.scheduling.structure.ExecutionFrame;
 import com.scheduling.structure.Process;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -68,7 +69,10 @@ public abstract class Scheduler {
         events.remove(exitEvent);
     }
 
-    protected void switchProcess(Process process, int time, int quantum) {
+    @Nullable
+    protected Process switchProcess(Process process, int time, int quantum) {
+        Process remainingProcess = null;
+
         if (runningProcess != null) {
             frames.add(new ExecutionFrame(runningProcess, startTime, time));
 
@@ -77,14 +81,14 @@ public abstract class Scheduler {
             var remainingTime = runningProcess.burstTime() - (time - startTime);
 
             if (remainingTime > 0) {
-                var remainingProcess = runningProcess.copy(remainingTime, quantum, time);
+                remainingProcess = runningProcess.copy(remainingTime, quantum, time);
                 addProcess(remainingProcess);
             }
         }
 
         if (process == null) {
             runningProcess = null;
-            return;
+            return remainingProcess;
         }
 
         runningProcess = process;
@@ -95,6 +99,8 @@ public abstract class Scheduler {
         statistics.addWaitingTime(process.name(), waitingTime);
 
         addRunningProcessEvents(process, time);
+
+        return remainingProcess;
     }
 
     protected void switchProcess(Process process, int time) {

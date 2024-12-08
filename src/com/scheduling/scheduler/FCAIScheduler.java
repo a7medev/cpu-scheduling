@@ -1,5 +1,7 @@
 package com.scheduling.scheduler;
 
+import com.scheduling.output.Log;
+import com.scheduling.output.Logger;
 import com.scheduling.output.Statistics;
 import com.scheduling.structure.SchedulerEvent.ProcessArrival;
 import com.scheduling.structure.SchedulerEvent.ProcessExit;
@@ -21,14 +23,24 @@ public class FCAIScheduler extends Scheduler {
     double maxBurstTime = 0;
     final double QUANTUM_THRESHOLD = 0.4;
 
+    private Logger logger;
+
     FCAIQueue processQueue = new FCAIQueue(this);
+
+    public FCAIScheduler(Logger logger) {
+        this.logger = logger;
+    }
 
     @Override
     public List<ExecutionFrame> schedule(List<com.scheduling.structure.Process> processes, Statistics statistics) {
+
         for (var process : processes) {
             lastArrivalTime = max(lastArrivalTime, process.arrivalTime());
             maxBurstTime = max(maxBurstTime, process.burstTime());
         }
+
+        lastArrivalTime /= 10.0;
+        maxBurstTime /= 10.0;
 
         return super.schedule(processes, statistics);
     }
@@ -51,7 +63,19 @@ public class FCAIScheduler extends Scheduler {
             processQueue.add(process);
         } else {
             // Preemption
-            switchProcess(process, event.time(), remainingQuantum + runningProcess.quantum());
+            var updatedQuantum = remainingQuantum + runningProcess.quantum();
+            var previousProcess = runningProcess;
+            var previousStartTime = startTime;
+
+            var remainingProcess = switchProcess(process, event.time(), updatedQuantum);
+
+            Log log;
+            if (remainingProcess == null) {
+                log = new Log(previousProcess.name(), previousStartTime, event.time(), 0, previousProcess.quantum(), updatedQuantum, previousProcess.priority(), factor(previousProcess), 0, true, "");
+            } else {
+                log = new Log(previousProcess.name(), previousStartTime, event.time(), remainingProcess.burstTime(), previousProcess.quantum(), updatedQuantum, previousProcess.priority(), factor(previousProcess), factor(remainingProcess), false, "");
+            }
+            logger.addLog(log);
         }
     }
 
@@ -60,6 +84,10 @@ public class FCAIScheduler extends Scheduler {
         super.onProcessExit(event);
 
         var process = processQueue.pollArrival();
+
+        var log = new Log(runningProcess.name(), startTime, event.time(), 0, runningProcess.quantum(), 0, runningProcess.priority(), factor(runningProcess), 0, true, "");
+        logger.addLog(log);
+
         switchProcess(process, event.time(), 0);
     }
 
@@ -70,7 +98,16 @@ public class FCAIScheduler extends Scheduler {
         }
 
         Process process = processQueue.pollArrival();
-        switchProcess(process, event.time(), runningProcess.quantum() + 2);
+
+        var previousProcess = runningProcess;
+
+        var previousStartTime = startTime;
+        var updatedQuantum = runningProcess.quantum() + 2;
+        var remainingProcess = switchProcess(process, event.time(), updatedQuantum);
+
+        assert remainingProcess != null;
+        var log = new Log(previousProcess.name(), previousStartTime, event.time(), remainingProcess.burstTime(), previousProcess.quantum(), updatedQuantum, previousProcess.priority(), factor(previousProcess), factor(remainingProcess), false, "");
+        logger.addLog(log);
     }
 
     @Override
@@ -87,10 +124,17 @@ public class FCAIScheduler extends Scheduler {
 
         processQueue.pollFactor();
 
-        var runningTime = event.time() - startTime;
-        int remainingQuantum = runningProcess.quantum() - runningTime;
+        var previousProcess = runningProcess;
 
-        switchProcess(process, event.time(), runningProcess.quantum() + remainingQuantum);
+        var runningTime = event.time() - startTime;
+        var previousStartTime = startTime;
+        int remainingQuantum = runningProcess.quantum() - runningTime;
+        var updatedQuantum = runningProcess.quantum() + remainingQuantum;
+        var remainingProcess = switchProcess(process, event.time(), updatedQuantum);
+
+        assert remainingProcess != null;
+        var log = new Log(previousProcess.name(), previousStartTime, event.time(), remainingProcess.burstTime(), previousProcess.quantum(), updatedQuantum, previousProcess.priority(), factor(previousProcess), factor(remainingProcess), false, "");
+        logger.addLog(log);
     }
 
     @Override
