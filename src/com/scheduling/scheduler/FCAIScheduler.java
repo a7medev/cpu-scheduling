@@ -71,9 +71,9 @@ public class FCAIScheduler extends Scheduler {
 
             Log log;
             if (remainingProcess == null) {
-                log = new Log(previousProcess.name(), previousStartTime, event.time(), 0, previousProcess.quantum(), updatedQuantum, previousProcess.priority(), factor(previousProcess), 0, true, "");
+                log = new Log(previousProcess.name(), previousStartTime, event.time(), 0, previousProcess.quantum(), updatedQuantum, previousProcess.priority(), factor(previousProcess), 0, true);
             } else {
-                log = new Log(previousProcess.name(), previousStartTime, event.time(), remainingProcess.burstTime(), previousProcess.quantum(), updatedQuantum, previousProcess.priority(), factor(previousProcess), factor(remainingProcess), false, "");
+                log = new Log(previousProcess.name(), previousStartTime, event.time(), remainingProcess.burstTime(), previousProcess.quantum(), updatedQuantum, previousProcess.priority(), factor(previousProcess), factor(remainingProcess), false);
             }
             logger.addLog(log);
         }
@@ -85,7 +85,7 @@ public class FCAIScheduler extends Scheduler {
 
         var process = processQueue.pollArrival();
 
-        var log = new Log(runningProcess.name(), startTime, event.time(), 0, runningProcess.quantum(), 0, runningProcess.priority(), factor(runningProcess), 0, true, "");
+        var log = new Log(runningProcess.name(), startTime, event.time(), 0, runningProcess.quantum(), 0, runningProcess.priority(), factor(runningProcess), 0, true);
         logger.addLog(log);
 
         switchProcess(process, event.time(), 0);
@@ -106,7 +106,7 @@ public class FCAIScheduler extends Scheduler {
         var remainingProcess = switchProcess(process, event.time(), updatedQuantum);
 
         assert remainingProcess != null;
-        var log = new Log(previousProcess.name(), previousStartTime, event.time(), remainingProcess.burstTime(), previousProcess.quantum(), updatedQuantum, previousProcess.priority(), factor(previousProcess), factor(remainingProcess), false, "");
+        var log = new Log(previousProcess.name(), previousStartTime, event.time(), remainingProcess.burstTime(), previousProcess.quantum(), updatedQuantum, previousProcess.priority(), factor(previousProcess), factor(remainingProcess), false);
         logger.addLog(log);
     }
 
@@ -133,7 +133,7 @@ public class FCAIScheduler extends Scheduler {
         var remainingProcess = switchProcess(process, event.time(), updatedQuantum);
 
         assert remainingProcess != null;
-        var log = new Log(previousProcess.name(), previousStartTime, event.time(), remainingProcess.burstTime(), previousProcess.quantum(), updatedQuantum, previousProcess.priority(), factor(previousProcess), factor(remainingProcess), false, "");
+        var log = new Log(previousProcess.name(), previousStartTime, event.time(), remainingProcess.burstTime(), previousProcess.quantum(), updatedQuantum, previousProcess.priority(), factor(previousProcess), factor(remainingProcess), false);
         logger.addLog(log);
     }
 
