@@ -31,13 +31,14 @@ import java.util.List;
 
 public class SchedulerFrame extends JFrame {
     private final DefaultTableModel processTableModel;
-    private final JScrollPane logsScrollPane;
-    private final DefaultTableModel logsTableModel;
     private final JLabel scheduleNameLabel;
     private final JLabel averageWaitLabel;
     private final JLabel averageTurnaroundLabel;
     private final JPanel chartPanel;
     private final List<Process> processes;
+
+    private Logger logger = null;
+    private Statistics statistics = null;
 
     public SchedulerFrame() {
         setTitle("CPU Scheduler");
@@ -68,17 +69,17 @@ public class SchedulerFrame extends JFrame {
         scheduleNameLabel = new JLabel("Schedule Name: ");
         averageWaitLabel = new JLabel("AWT: --");
         averageTurnaroundLabel = new JLabel("ATAT: --");
+        var openStatisticsButton = new JButton("Open Statistics");
+
+        openStatisticsButton.addActionListener(e -> {
+            var statisticsFrame = new StatisticsFrame(logger, statistics);
+            statisticsFrame.setVisible(true);
+        });
 
         statsPanel.add(scheduleNameLabel);
         statsPanel.add(averageWaitLabel);
         statsPanel.add(averageTurnaroundLabel);
-
-        String[] logsColumns = {"Time", "Process", "Executed Time", "Remaining Burst Time", "Updated Quantum", "Priority", "FCAI Factor"};
-        logsTableModel = new DefaultTableModel(logsColumns, 0);
-        JTable logsTable = new JTable(logsTableModel);
-
-        logsScrollPane = new JScrollPane(logsTable);
-        logsScrollPane.setPreferredSize(new Dimension(400, 300));
+        statsPanel.add(openStatisticsButton);
 
         leftPanel.add(schedulerPanel, BorderLayout.NORTH);
         leftPanel.add(chartPanel, BorderLayout.CENTER);
@@ -180,8 +181,12 @@ public class SchedulerFrame extends JFrame {
             } else {
                 var selectedScheduler = (String) comboBox.getSelectedItem();
 
-                var statistics = new Statistics();
-                var logger = new Logger();
+                statistics = new Statistics();
+                if ("FCAI".equals(selectedScheduler)) {
+                    logger = new Logger();
+                } else {
+                    logger = null;
+                }
 
                 Scheduler scheduler = switch (selectedScheduler) {
                     case "SJF" -> new SJFScheduler();
@@ -190,12 +195,6 @@ public class SchedulerFrame extends JFrame {
                     default -> new FCAIScheduler(logger);
                 };
                 var executionFrames = scheduler.schedule(processes, statistics);
-
-                if (selectedScheduler.equals("FCAI")) {
-                    statsPanel.add(logsScrollPane);
-                } else {
-                    statsPanel.remove(logsScrollPane);
-                }
 
                 //update the statistics panel variables
                 int awt = statistics.getAverageWaitingTime();
@@ -211,24 +210,6 @@ public class SchedulerFrame extends JFrame {
                 chartPanel.add(createChartPanel(executionFrames));
                 chartPanel.revalidate(); // Refresh the chartPanel
                 chartPanel.repaint(); // Redraw the panel
-
-                // Clear the logs table
-                for (int i = logsTableModel.getRowCount() - 1; i >= 0; i--) {
-                    logsTableModel.removeRow(i);
-                }
-
-                for (var log : logger.getLogs()) {
-                    var time = log.startTime() + "-" + log.endTime();
-                    var process = log.process();
-                    var duration = log.endTime() - log.startTime();
-                    var burstTime = log.remainingBurstTime();
-                    var quantum = log.completed() ? "Completed" : log.initialQuantum() + "→" + log.updatedQuantum();
-                    var priority = log.priority();
-                    var factor = log.completed() ? "Completed" : log.initialFactor() + "→" + log.updatedFactor();
-
-                    Object[] row = {time, process, duration, burstTime, quantum, priority, factor};
-                    logsTableModel.addRow(row);
-                }
             }
         });
     }
@@ -257,10 +238,10 @@ public class SchedulerFrame extends JFrame {
         var range = new DateAxis(null);
         var dateFormatter = new SimpleDateFormat("S");
         var renderer = new ChartRenderer();
-        renderer.setBaseToolTipGenerator(new IntervalCategoryToolTipGenerator("{3} - {4}", dateFormatter));
         range.setDateFormatOverride(dateFormatter);
         plot.setRangeAxis(range);
         plot.setRenderer(renderer);
+        plot.setBackgroundPaint(Color.WHITE);
 
         return chart;
     }
