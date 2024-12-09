@@ -1,6 +1,6 @@
 package com.scheduling.structure;
 
-import org.jetbrains.annotations.NotNull;
+//import org.jetbrains.annotations.NotNull;
 
 import java.util.Comparator;
 
@@ -16,7 +16,7 @@ public sealed interface SchedulerEvent extends Comparable<SchedulerEvent> {
     /// First compares on the event time, if a tie happens it prioritizes ProcessExit on the rest
     /// based on {@link #eventPriority}.
     @Override
-    default int compareTo(@NotNull SchedulerEvent other) {
+    default int compareTo(/*@NotNull*/ SchedulerEvent other) {
         return Comparator.comparing(SchedulerEvent::time)
                 .thenComparing(SchedulerEvent::eventPriority)
                 .compare(this, other);

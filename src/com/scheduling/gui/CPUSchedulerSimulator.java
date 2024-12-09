@@ -1,5 +1,10 @@
 package com.scheduling.gui;
 
+import com.scheduling.output.*;
+import com.scheduling.structure.ExecutionFrame;
+import com.scheduling.structure.Process;
+import com.scheduling.scheduler.*;
+
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
@@ -10,11 +15,14 @@ import org.jfree.data.gantt.TaskSeries;
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.Date;
-import java.util.Random;
+
+import java.lang.reflect.InvocationTargetException;
+import java.util.*;
+import java.util.List;
 
 public class CPUSchedulerSimulator extends JFrame {
 
@@ -22,6 +30,9 @@ public class CPUSchedulerSimulator extends JFrame {
     private int processCounter = 0; // Counter for unique process numbers
     private JLabel scheduleNameLabel, awtLabel, atatLabel;
     private JPanel chartPanel;
+    private List<Process> processes;
+    private Set<String> processesNames;
+
 
     public CPUSchedulerSimulator() {
         setTitle("CPU Scheduler GUI");
@@ -124,6 +135,17 @@ public class CPUSchedulerSimulator extends JFrame {
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setVisible(true);
 
+        //LOGIC SECTION
+        //this hashmap will convert the string of the user's selection from the combo box, to the appropriate class, that will be used to declare the Scheduler
+        HashMap<String, Class<?>> stringToScheduler_map = new HashMap<>();
+        stringToScheduler_map.put("FCAI", FCAIScheduler.class);
+        stringToScheduler_map.put("Priority", PriorityScheduler.class);
+        stringToScheduler_map.put("SJF", SJFScheduler.class);
+        stringToScheduler_map.put("SRTF", SRTFScheduler.class);
+        //create a list to receive the processes the user will input
+        processes = new ArrayList<>();
+        processesNames = new TreeSet<>();
+
         // Add action listener for "Add Process" button
         addProcessButton.addActionListener(new ActionListener() {
             @Override
@@ -142,6 +164,12 @@ public class CPUSchedulerSimulator extends JFrame {
 
                 // Generate random color
                 Color randomColor = getRandomColor();
+
+                //LOGIC SECTION
+                //create the process and add it to the list of processes
+                processesNames.add(processName);
+                Process process = new Process(processName, Integer.parseInt(arrivalTime), Integer.parseInt(burstTime), Integer.parseInt(priority), Integer.parseInt(quantum), randomColor.toString());
+                processes.add(process);
 
                 // Add new row to process table
                 processTableModel.addRow(new Object[]{processCounter++, randomColor, processName, arrivalTime, burstTime, priority, quantum});
@@ -164,19 +192,32 @@ public class CPUSchedulerSimulator extends JFrame {
                     JOptionPane.showMessageDialog(null, "No processes to schedule! Please add processes first.", "Error", JOptionPane.ERROR_MESSAGE);
                 } else {
                     String selectedScheduler = (String) comboBox.getSelectedItem();
-                    scheduleNameLabel.setText("Schedule Name: " + selectedScheduler);
 
-                    // Generate random AWT and ATAT values
-                    int awt = getRandomValue();
-                    int atat = getRandomValue();
+                    //LOGIC SECTION
+                    Statistics statistics = new Statistics();
+                    Logger logger = new Logger();
+                    List<ExecutionFrame> executionFrames = new ArrayList<>();
+                    //create a scheduler reference pointer to an object chosen according to the type of scheduler that the user selected
+                    try {
+                        Scheduler scheduler = (Scheduler) stringToScheduler_map.get(selectedScheduler).getDeclaredConstructor(Logger.class).newInstance(logger);
+                        executionFrames = scheduler.schedule(processes, statistics);
+                    } catch (NoSuchMethodException | InstantiationException | IllegalAccessException |
+                             InvocationTargetException ex) {
+                        throw new RuntimeException(ex);
+                    }
+
+                    //update the statistics panel variables
+                    int awt = statistics.getAverageWaitingTime();
+                    int atat = statistics.getAverageTurnaroundTime();
 
                     // Update the statistics panel
+                    scheduleNameLabel.setText("Schedule Name: " + selectedScheduler);
                     awtLabel.setText("AWT: " + awt);
                     atatLabel.setText("ATAT: " + atat);
 
                     // Create and display the chart when Schedule button is clicked
                     chartPanel.removeAll();
-                    chartPanel.add(createChartPanel());
+                    chartPanel.add(createChartPanel(executionFrames));
                     chartPanel.revalidate(); // Refresh the chartPanel
                     chartPanel.repaint(); // Redraw the panel
                 }
@@ -184,38 +225,56 @@ public class CPUSchedulerSimulator extends JFrame {
         });
     }
 
-    private JPanel createChartPanel() {
-        JFreeChart chart = createChart();
+    private JPanel createChartPanel(List<ExecutionFrame> executionFrames) {
+        JFreeChart chart = createChart(executionFrames);
         ChartPanel chartPanel = new ChartPanel(chart);
         chartPanel.setPreferredSize(new Dimension(400, 300));
         return chartPanel;
     }
 
-    private JFreeChart createChart() {
-        TaskSeriesCollection dataset = createDataset();
-        return ChartFactory.createGanttChart(
+    private JFreeChart createChart(List <ExecutionFrame> executionFrames) {
+        TaskSeriesCollection dataset = createDataset(executionFrames);
+        return CategoryPlot plot = (CategoryPlot) chart.getPlot();
+        DateAxis range = new DateAxis("Date");
+        range.setDateFormatOverride(new SimpleDateFormat("ss.SSS"));
+        plot.setRangeAxis(range);
+                ChartFactory.createGanttChart(
                 "CPU Scheduling", // Title
                 "Processes", // Row key
                 "Time", // Column key
                 dataset,
-                true,
+                false,
                 true,
                 false
         );
     }
 
-    private TaskSeriesCollection createDataset() {
-        TaskSeries series1 = new TaskSeries("Scheduled Tasks");
-        series1.add(new Task("Process0", new Date(0), new Date(5)));
-        series1.add(new Task("Process1", new Date(5), new Date(10)));
-        series1.add(new Task("Process2", new Date(10), new Date(15)));
-        TaskSeriesCollection dataset = new TaskSeriesCollection();
-        dataset.add(series1); return dataset;
-    }
+    private TaskSeriesCollection createDataset(List<ExecutionFrame> executionFrames) {
+        //A TaskSeries represents a process
+        //A Task represent an ExecutionFrame
+        Task[] frames = new Task[processCounter];
+        Iterator<String> iterator = processesNames.iterator();
+        TaskSeries ganttChart = new TaskSeries("");
+        int maxEndTime = executionFrames.get(executionFrames.size() - 1).endTime();
+        for (int i = 0; i < processCounter; i++)
+        {
+            frames[i] = new Task("Process " + Integer.toString(i + 1), new Date(0), new Date(maxEndTime + 3));
+            String currentProcessName = iterator.next();
+            for (int j = 0; j < executionFrames.size(); j++)
+            {
+                ExecutionFrame currentFrame = executionFrames.get(j);
+                if(currentFrame.process().name() == currentProcessName)
+                {
+                    Task task = new Task("Process " + Integer.toString(i + 1), new Date(currentFrame.startTime()), new Date(currentFrame.endTime()));
+                    frames[i].addSubtask(task);
+                }
+            }
+            ganttChart.add(frames[i]);
+        }
 
-    private int getRandomValue() {
-        Random random = new Random();
-        return random.nextInt(50) + 1;
+        TaskSeriesCollection dataset = new TaskSeriesCollection();
+        dataset.add(ganttChart);
+        return dataset;
     }
 
     private Color getRandomColor() {

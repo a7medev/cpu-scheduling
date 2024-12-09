@@ -1,6 +1,6 @@
 package com.scheduling.structure;
 
-import org.jetbrains.annotations.NotNull;
+//import org.jetbrains.annotations.NotNull;
 
 import java.util.Comparator;
 
@@ -20,7 +20,7 @@ public record Process(String name,
     }
 
     @Override
-    public int compareTo(@NotNull Process other) {
+    public int compareTo(/*@NotNull*/ Process other) {
         return Comparator.comparing(Process::burstTime)
                 .thenComparing(Process::arrivalTime)
                 .compare(this, other);

@@ -23,5 +23,8 @@ public class Main {
 
         System.out.println(scheduler.schedule(processes, statistics).stream().map(e -> e.process().name() + ":" + e.startTime() + "-" + e.endTime()).collect(Collectors.joining(" ")));
         System.out.println(logger);
+
+        System.out.println(statistics.getAverageWaitingTime());
+        System.out.println(statistics.getAverageTurnaroundTime());
     }
 }

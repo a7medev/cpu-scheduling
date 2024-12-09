@@ -5,7 +5,7 @@ import com.scheduling.structure.SchedulerEvent;
 import com.scheduling.structure.SchedulerEvent.*;
 import com.scheduling.structure.ExecutionFrame;
 import com.scheduling.structure.Process;
-import org.jetbrains.annotations.Nullable;
+//import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -69,7 +69,7 @@ public abstract class Scheduler {
         events.remove(exitEvent);
     }
 
-    @Nullable
+    //@Nullable
     protected Process switchProcess(Process process, int time, int quantum) {
         Process remainingProcess = null;
 
