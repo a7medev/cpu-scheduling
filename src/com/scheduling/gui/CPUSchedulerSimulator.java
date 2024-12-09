@@ -4,16 +4,17 @@ import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.data.gantt.TaskSeriesCollection;
-
 import org.jfree.data.gantt.Task;
 import org.jfree.data.gantt.TaskSeries;
 
 import javax.swing.*;
-import javax.swing.table.*;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.awt.event.*;
-import java.util.Random;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.Date;
+import java.util.Random;
 
 public class CPUSchedulerSimulator extends JFrame {
 
@@ -66,7 +67,7 @@ public class CPUSchedulerSimulator extends JFrame {
         JPanel rightPanel = new JPanel(new BorderLayout(10, 10));
 
         // Process Information Table
-        String[] processColumnNames = {"Process Number", "Color", "Name", "PID", "Priority"};
+        String[] processColumnNames = {"PNumber", "Color", "Name", "Arrival Time", "Burst Time", "Priority", "Quantum"};
         processTableModel = new DefaultTableModel(processColumnNames, 0);
         JTable processTable = new JTable(processTableModel);
 
@@ -84,17 +85,29 @@ public class CPUSchedulerSimulator extends JFrame {
         processScrollPane.setBorder(BorderFactory.createTitledBorder("Processes Information"));
 
         // Input Form
-        JPanel inputPanel = new JPanel(new GridLayout(4, 2, 10, 10));
+        JPanel inputPanel = new JPanel(new GridLayout(6, 2, 10, 10));
         JLabel processNameLabel = new JLabel("Process Name:");
         JTextField processNameField = new JTextField(10);
-        JLabel processPriorityLabel = new JLabel("Priority:");
-        JTextField processPriorityField = new JTextField(10);
+        JLabel arrivalTimeLabel = new JLabel("Arrival Time:");
+        JTextField arrivalTimeField = new JTextField(10);
+        JLabel burstTimeLabel = new JLabel("Burst Time:");
+        JTextField burstTimeField = new JTextField(10);
+        JLabel priorityLabel = new JLabel("Priority:");
+        JTextField priorityField = new JTextField(10);
+        JLabel quantumLabel = new JLabel("Quantum:");
+        JTextField quantumField = new JTextField(10);
         JButton addProcessButton = new JButton("Add Process");
 
         inputPanel.add(processNameLabel);
         inputPanel.add(processNameField);
-        inputPanel.add(processPriorityLabel);
-        inputPanel.add(processPriorityField);
+        inputPanel.add(arrivalTimeLabel);
+        inputPanel.add(arrivalTimeField);
+        inputPanel.add(burstTimeLabel);
+        inputPanel.add(burstTimeField);
+        inputPanel.add(priorityLabel);
+        inputPanel.add(priorityField);
+        inputPanel.add(quantumLabel);
+        inputPanel.add(quantumField);
         inputPanel.add(new JLabel()); // Empty placeholder for spacing
         inputPanel.add(addProcessButton);
 
@@ -116,29 +129,29 @@ public class CPUSchedulerSimulator extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 String processName = processNameField.getText().trim();
-                String priority = processPriorityField.getText().trim();
+                String arrivalTime = arrivalTimeField.getText().trim();
+                String burstTime = burstTimeField.getText().trim();
+                String priority = priorityField.getText().trim();
+                String quantum = quantumField.getText().trim();
 
                 // Validate input fields
-                if (processName.isEmpty() || priority.isEmpty()) {
-                    JOptionPane.showMessageDialog(null, "Please enter both Process Name and Priority!");
+                if (processName.isEmpty() || arrivalTime.isEmpty() || burstTime.isEmpty() || priority.isEmpty() || quantum.isEmpty()) {
+                    JOptionPane.showMessageDialog(null, "Please fill in all fields!");
                     return;
                 }
-
-                // Generate unique process number
-                int processNumber = processCounter++;
 
                 // Generate random color
                 Color randomColor = getRandomColor();
 
-                // Generate a random PID for demonstration purposes
-                int pid = 20220 + processCounter;
-
                 // Add new row to process table
-                processTableModel.addRow(new Object[]{processNumber, randomColor, processName, pid, priority});
+                processTableModel.addRow(new Object[]{processCounter++, randomColor, processName, arrivalTime, burstTime, priority, quantum});
 
                 // Clear input fields
                 processNameField.setText("");
-                processPriorityField.setText("");
+                arrivalTimeField.setText("");
+                burstTimeField.setText("");
+                priorityField.setText("");
+                quantumField.setText("");
             }
         });
 
@@ -146,27 +159,31 @@ public class CPUSchedulerSimulator extends JFrame {
         scheduleButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                String selectedScheduler = (String) comboBox.getSelectedItem();
-                scheduleNameLabel.setText("Schedule Name: " + selectedScheduler);
 
-                // Generate random AWT and ATAT values
-                int awt = getRandomValue();
-                int atat = getRandomValue();
+                if (processTableModel.getRowCount() == 0) { // Check if the processes table is empty
+                    JOptionPane.showMessageDialog(null, "No processes to schedule! Please add processes first.", "Error", JOptionPane.ERROR_MESSAGE);
+                } else {
+                    String selectedScheduler = (String) comboBox.getSelectedItem();
+                    scheduleNameLabel.setText("Schedule Name: " + selectedScheduler);
 
-                // Update the statistics panel
-                awtLabel.setText("AWT: " + awt);
-                atatLabel.setText("ATAT: " + atat);
+                    // Generate random AWT and ATAT values
+                    int awt = getRandomValue();
+                    int atat = getRandomValue();
 
-                // Create and display the chart when Schedule button is clicked
-                chartPanel.removeAll();
-                chartPanel.add(createChartPanel());
-                chartPanel.revalidate(); // Refresh the chartPanel
-                chartPanel.repaint(); // Redraw the panel
+                    // Update the statistics panel
+                    awtLabel.setText("AWT: " + awt);
+                    atatLabel.setText("ATAT: " + atat);
+
+                    // Create and display the chart when Schedule button is clicked
+                    chartPanel.removeAll();
+                    chartPanel.add(createChartPanel());
+                    chartPanel.revalidate(); // Refresh the chartPanel
+                    chartPanel.repaint(); // Redraw the panel
+                }
             }
         });
     }
 
-    // Method to create a chart (e.g., bar chart)
     private JPanel createChartPanel() {
         JFreeChart chart = createChart();
         ChartPanel chartPanel = new ChartPanel(chart);
@@ -174,37 +191,17 @@ public class CPUSchedulerSimulator extends JFrame {
         return chartPanel;
     }
 
-    // Method to create a sample chart
     private JFreeChart createChart() {
         TaskSeriesCollection dataset = createDataset();
-
-        // Create a bar chart
         return ChartFactory.createGanttChart(
-                "", // Title
-                "Process", // X-axis label
-                "Time", // Y-axis label
-                dataset, // Dataset
-//                PlotOrientation.VERTICAL,
-                true, // Include legend
-                true, // Tooltips
-                false // URLs
+                "CPU Scheduling", // Title
+                "Processes", // Row key
+                "Time", // Column key
+                dataset,
+                true,
+                true,
+                false
         );
-
-        // Customize the chart
-//        CategoryPlot plot = (CategoryPlot) chart.getPlot();
-//        GanttRenderer renderer = new GanttRenderer();
-//        plot.setRenderer(renderer);
-    }
-
-    // Helper method to generate random data for the chart
-    private int getRandomValue() {
-        Random random = new Random();
-        return random.nextInt(100) + 1;  // Random value between 1 and 100
-    }
-
-    private Color getRandomColor() {
-        Random random = new Random();
-        return new Color(random.nextInt(256), random.nextInt(256), random.nextInt(256));
     }
 
     private TaskSeriesCollection createDataset() {
@@ -214,6 +211,16 @@ public class CPUSchedulerSimulator extends JFrame {
         series1.add(new Task("Process2", new Date(10), new Date(15)));
         TaskSeriesCollection dataset = new TaskSeriesCollection();
         dataset.add(series1); return dataset;
+    }
+
+    private int getRandomValue() {
+        Random random = new Random();
+        return random.nextInt(50) + 1;
+    }
+
+    private Color getRandomColor() {
+        Random random = new Random();
+        return new Color(random.nextInt(256), random.nextInt(256), random.nextInt(256));
     }
 
     public static void main(String[] args) {
