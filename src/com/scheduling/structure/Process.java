@@ -2,6 +2,7 @@ package com.scheduling.structure;
 
 //import org.jetbrains.annotations.NotNull;
 
+import java.awt.*;
 import java.util.Comparator;
 
 public record Process(String name,
@@ -10,8 +11,8 @@ public record Process(String name,
                       int burstTime,
                       int priority,
                       int quantum,
-                      String color) implements Comparable<Process> {
-    public Process(String name, int arrivalTime, int burstTime, int priority, int quantum, String color) {
+                      Color color) implements Comparable<Process> {
+    public Process(String name, int arrivalTime, int burstTime, int priority, int quantum, Color color) {
         this(name, arrivalTime, arrivalTime, burstTime, priority, quantum, color);
     }
 
