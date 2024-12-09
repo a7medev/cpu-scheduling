@@ -31,6 +31,8 @@ import java.util.List;
 
 public class SchedulerFrame extends JFrame {
     private final DefaultTableModel processTableModel;
+    private final JScrollPane logsScrollPane;
+    private final DefaultTableModel logsTableModel;
     private final JLabel scheduleNameLabel;
     private final JLabel averageWaitLabel;
     private final JLabel averageTurnaroundLabel;
@@ -61,6 +63,7 @@ public class SchedulerFrame extends JFrame {
         JPanel statsPanel = new JPanel();
         statsPanel.setLayout(new BoxLayout(statsPanel, BoxLayout.Y_AXIS));
         statsPanel.setBorder(BorderFactory.createTitledBorder("Statistics"));
+        statsPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         scheduleNameLabel = new JLabel("Schedule Name: ");
         averageWaitLabel = new JLabel("AWT: --");
@@ -69,6 +72,13 @@ public class SchedulerFrame extends JFrame {
         statsPanel.add(scheduleNameLabel);
         statsPanel.add(averageWaitLabel);
         statsPanel.add(averageTurnaroundLabel);
+
+        String[] logsColumns = {"Time", "Process", "Executed Time", "Remaining Burst Time", "Updated Quantum", "Priority", "FCAI Factor"};
+        logsTableModel = new DefaultTableModel(logsColumns, 0);
+        JTable logsTable = new JTable(logsTableModel);
+
+        logsScrollPane = new JScrollPane(logsTable);
+        logsScrollPane.setPreferredSize(new Dimension(400, 300));
 
         leftPanel.add(schedulerPanel, BorderLayout.NORTH);
         leftPanel.add(chartPanel, BorderLayout.CENTER);
@@ -172,6 +182,7 @@ public class SchedulerFrame extends JFrame {
 
                 var statistics = new Statistics();
                 var logger = new Logger();
+
                 Scheduler scheduler = switch (selectedScheduler) {
                     case "SJF" -> new SJFScheduler();
                     case "SRTF" -> new SRTFScheduler();
@@ -179,6 +190,12 @@ public class SchedulerFrame extends JFrame {
                     default -> new FCAIScheduler(logger);
                 };
                 var executionFrames = scheduler.schedule(processes, statistics);
+
+                if (selectedScheduler.equals("FCAI")) {
+                    statsPanel.add(logsScrollPane);
+                } else {
+                    statsPanel.remove(logsScrollPane);
+                }
 
                 //update the statistics panel variables
                 int awt = statistics.getAverageWaitingTime();
@@ -194,6 +211,24 @@ public class SchedulerFrame extends JFrame {
                 chartPanel.add(createChartPanel(executionFrames));
                 chartPanel.revalidate(); // Refresh the chartPanel
                 chartPanel.repaint(); // Redraw the panel
+
+                // Clear the logs table
+                for (int i = logsTableModel.getRowCount() - 1; i >= 0; i--) {
+                    logsTableModel.removeRow(i);
+                }
+
+                for (var log : logger.getLogs()) {
+                    var time = log.startTime() + "-" + log.endTime();
+                    var process = log.process();
+                    var duration = log.endTime() - log.startTime();
+                    var burstTime = log.remainingBurstTime();
+                    var quantum = log.completed() ? "Completed" : log.initialQuantum() + "→" + log.updatedQuantum();
+                    var priority = log.priority();
+                    var factor = log.completed() ? "Completed" : log.initialFactor() + "→" + log.updatedFactor();
+
+                    Object[] row = {time, process, duration, burstTime, quantum, priority, factor};
+                    logsTableModel.addRow(row);
+                }
             }
         });
     }

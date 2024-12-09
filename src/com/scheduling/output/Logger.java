@@ -10,6 +10,10 @@ public class Logger {
         logs.add(log);
     }
 
+    public List<Log> getLogs() {
+        return logs;
+    }
+
     @Override
     public String toString() {
         StringBuilder output = new StringBuilder("Time    Process     Executed Time   Remaining Burst Time    Updated Quantum     Priority      FCAI Factor\n");
